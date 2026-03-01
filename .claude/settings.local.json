@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter --version:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(flutter build:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git -C /Users/okinagajoe/Desktop/_thesis/study_city status)",
+      "Bash(git -C /Users/okinagajoe/Desktop/_thesis/study_city log --oneline -5)",
+      "Bash(git -C /Users/okinagajoe/Desktop/_thesis/study_city diff --cached)",
+      "Bash(git -C /Users/okinagajoe/Desktop/_thesis/study_city add .gitignore .metadata README.md analysis_options.yaml architecture/ lib/ pubspec.lock pubspec.yaml test/ web/ .claude/)"
+    ]
+  }
+}
