@@ -26,13 +26,13 @@ class StudySessionRepository {
       _collection,
       where: [
         ['userId', '==', userId],
-        ['date', '>=', fromDate],
-        ['date', '<=', toDate],
       ],
-      orderBy: 'date',
-      descending: true,
     );
-    return docs.map((d) => StudySession.fromJson(d)).toList();
+    final sessions = docs.map((d) => StudySession.fromJson(d)).toList();
+    // Filter and sort client-side to avoid composite index requirement
+    sessions.retainWhere((s) => s.date.compareTo(fromDate) >= 0 && s.date.compareTo(toDate) <= 0);
+    sessions.sort((a, b) => b.date.compareTo(a.date));
+    return sessions;
   }
 
   Stream<List<StudySession>> streamRecentSessions(
@@ -45,13 +45,12 @@ class StudySessionRepository {
           where: [
             ['userId', '==', userId],
           ],
-          orderBy: 'startTime',
-          descending: true,
         )
-        .map((docs) => docs
-            .take(limit)
-            .map((d) => StudySession.fromJson(d))
-            .toList());
+        .map((docs) {
+          final list = docs.map((d) => StudySession.fromJson(d)).toList();
+          list.sort((a, b) => b.startTime.compareTo(a.startTime));
+          return list.take(limit).toList();
+        });
   }
 
   Future<List<DailyStats>> getDailyStats(

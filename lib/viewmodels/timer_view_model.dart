@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +20,7 @@ class TimerViewModel extends ChangeNotifier {
   final SubjectRepository _subjectRepository;
   final RewardService _rewardService;
   final UserRepository _userRepository;
+  StreamSubscription<List<Subject>>? _subjectsSub;
 
   bool get isRunning => _timerService.isRunning;
   Duration get elapsed => _timerService.elapsed;
@@ -34,10 +37,22 @@ class TimerViewModel extends ChangeNotifier {
   );
 
   Future<void> loadSubjects(String userId) async {
-    _subjectRepository.streamSubjects(userId).listen((list) {
-      subjects = list;
-      notifyListeners();
-    });
+    // Cancel existing subscription to prevent duplicates
+    await _subjectsSub?.cancel();
+    _subjectsSub = _subjectRepository.streamSubjects(userId).listen(
+      (list) {
+        subjects = list;
+        // Keep selectedSubject in sync with the updated list
+        if (selectedSubject != null) {
+          final match = list.where((s) => s.id == selectedSubject!.id).firstOrNull;
+          selectedSubject = match;
+        }
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint('Error loading subjects: $error');
+      },
+    );
   }
 
   void selectSubject(Subject subject) {
@@ -88,6 +103,7 @@ class TimerViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _subjectsSub?.cancel();
     _timerService.dispose();
     super.dispose();
   }

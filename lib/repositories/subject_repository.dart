@@ -28,9 +28,12 @@ class SubjectRepository {
           where: [
             ['userId', '==', userId],
           ],
-          orderBy: 'createdAt',
         )
-        .map((docs) => docs.map((d) => Subject.fromJson(d)).toList());
+        .map((docs) {
+          final list = docs.map((d) => Subject.fromJson(d)).toList();
+          list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          return list;
+        });
   }
 
   Future<void> addStudyTime(
