@@ -51,7 +51,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
   String _formatTotalTime(int seconds) {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
-    if (h > 0) return '$h時間${m}分';
+    if (h > 0) return '$h時間$m分';
     return '$m分';
   }
 
@@ -381,7 +381,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${s.icon} ${s.name} (${minutes}分)',
+                        '${s.icon} ${s.name} ($minutes分)',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],

@@ -226,7 +226,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         children: [
           Expanded(
             child: DropdownButtonFormField<Subject>(
-              value: timerVM.selectedSubject,
+              initialValue: timerVM.selectedSubject,
               decoration: const InputDecoration(
                 labelText: '科目を選択',
                 prefixIcon: Icon(Icons.book),

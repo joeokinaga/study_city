@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import '../models/review_schedule.dart';
 
 class SM2Algorithm {
@@ -23,12 +21,10 @@ class SM2Algorithm {
 
     // Step 2: Calculate next interval
     int newInterval;
-    int newRepetitions;
 
     if (difficulty < 3) {
       // Review failed — reset
       newInterval = 1;
-      newRepetitions = 0;
     } else {
       // Review succeeded
       if (repetitions == 0) {
@@ -38,7 +34,6 @@ class SM2Algorithm {
       } else {
         newInterval = (previousInterval * newEF).ceil();
       }
-      newRepetitions = repetitions + 1;
     }
 
     final nextReviewDate =
