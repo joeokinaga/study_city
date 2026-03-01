@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../models/building.dart';
 import '../services/auth_service.dart';
-import '../viewmodels/building_view_model.dart';
+import '../viewmodels/city_view_model.dart';
 import '../viewmodels/review_view_model.dart';
 import '../viewmodels/user_view_model.dart';
+import '../widgets/isometric_city_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -41,71 +41,89 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final userVM = ref.watch(userViewModelProvider);
     final reviewVM = ref.watch(reviewViewModelProvider);
-    final buildingVM = ref.watch(buildingViewModelProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Study City',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
+      body: Stack(
+        children: [
+          // Background color behind the isometric grid.
+          Container(color: const Color(0xFF4A8C30)),
+
+          // Isometric city view (full screen, pannable/zoomable).
+          const IsometricCityWidget(),
+
+          // User info card (top-left overlay).
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 12,
+            child: _buildUserOverlay(userVM, theme),
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'サインアウト',
-            onPressed: _signOut,
-          ),
-        ],
-      ),
-      body: userVM.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: () async {
-                await ref.read(userViewModelProvider).loadUser(_uid);
-                await ref.read(reviewViewModelProvider).loadTodayItems(_uid);
-              },
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // User info card
-                  _buildUserCard(userVM, theme),
-                  const SizedBox(height: 20),
 
-                  // Review banner
-                  if (reviewVM.todayItems.isNotEmpty)
-                    _buildReviewBanner(reviewVM.todayItems.length, theme),
-                  if (reviewVM.todayItems.isNotEmpty) const SizedBox(height: 20),
-
-                  // Buildings section
-                  Text(
-                    'あなたの街',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildBuildingList(buildingVM),
-                  const SizedBox(height: 24),
-
-                  // Start study button
-                  SizedBox(
-                    height: 56,
-                    child: FilledButton.icon(
-                      onPressed: () => context.go('/timer'),
-                      icon: const Icon(Icons.play_arrow, size: 28),
-                      label: const Text(
-                        '学習を始める',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+          // Logout button (top-right).
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            right: 12,
+            child: Material(
+              color: Colors.black.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(20),
+              child: IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white, size: 20),
+                tooltip: 'Sign out',
+                onPressed: _signOut,
               ),
             ),
+          ),
+
+          // Review badge (top-right, below logout).
+          if (reviewVM.todayItems.isNotEmpty)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 56,
+              right: 12,
+              child: _buildReviewBadge(reviewVM.todayItems.length, theme),
+            ),
+
+          // Start study FAB (bottom-center).
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: FloatingActionButton.extended(
+                heroTag: 'study_fab',
+                onPressed: () => context.go('/timer'),
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Start Studying'),
+              ),
+            ),
+          ),
+
+          // Hint text for empty city.
+          if (userVM.currentUser != null &&
+              !userVM.isLoading &&
+              ref.watch(cityViewModelProvider).buildings.isEmpty)
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.4,
+              left: 40,
+              right: 40,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Tap an empty tile to build!\nStudy to earn coins and grow your city.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
         onDestinationSelected: (index) {
@@ -123,158 +141,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           }
         },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'ホーム'),
-          NavigationDestination(icon: Icon(Icons.timer), label: '学習'),
-          NavigationDestination(icon: Icon(Icons.checklist), label: '復習'),
-          NavigationDestination(icon: Icon(Icons.location_city), label: '街'),
-          NavigationDestination(icon: Icon(Icons.bar_chart), label: '統計'),
+          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.timer), label: 'Study'),
+          NavigationDestination(icon: Icon(Icons.checklist), label: 'Review'),
+          NavigationDestination(
+              icon: Icon(Icons.location_city), label: 'City'),
+          NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Stats'),
         ],
       ),
     );
   }
 
-  Widget _buildUserCard(UserViewModel userVM, ThemeData theme) {
+  Widget _buildUserOverlay(UserViewModel userVM, ThemeData theme) {
     final user = userVM.currentUser;
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Text(
-                user?.name.isNotEmpty == true
-                    ? user!.name.substring(0, 1)
-                    : '?',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: theme.colorScheme.primaryContainer,
+            child: Text(
+              user?.name.isNotEmpty == true
+                  ? user!.name.substring(0, 1)
+                  : '?',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                user?.name ?? 'User',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
                 children: [
+                  Icon(Icons.star, size: 13, color: Colors.amber[400]),
+                  const SizedBox(width: 3),
                   Text(
-                    user?.name ?? 'ユーザー',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    '${user?.exp ?? 0}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.star, size: 16, color: Colors.amber[700]),
-                      const SizedBox(width: 4),
-                      Text('${user?.exp ?? 0} EXP'),
-                      const SizedBox(width: 16),
-                      Icon(Icons.monetization_on,
-                          size: 16, color: Colors.amber[700]),
-                      const SizedBox(width: 4),
-                      Text('${user?.coins ?? 0} Coins'),
-                    ],
+                  const SizedBox(width: 10),
+                  Icon(Icons.monetization_on,
+                      size: 13, color: Colors.amber[400]),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${user?.coins ?? 0}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildReviewBanner(int count, ThemeData theme) {
-    return Card(
-      color: theme.colorScheme.tertiaryContainer,
+  Widget _buildReviewBadge(int count, ThemeData theme) {
+    return Material(
+      color: Colors.orange.shade700,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
+        borderRadius: BorderRadius.circular(20),
         onTap: () => context.go('/review'),
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.notifications_active,
-                  color: theme.colorScheme.onTertiaryContainer),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '今日の復習: $count件',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onTertiaryContainer,
-                  ),
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios,
-                  size: 16, color: theme.colorScheme.onTertiaryContainer),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBuildingList(BuildingViewModel buildingVM) {
-    if (_uid.isEmpty) return const SizedBox.shrink();
-
-    return SizedBox(
-      height: 140,
-      child: StreamBuilder<List<Building>>(
-        stream: buildingVM.streamBuildings(_uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final buildings = snapshot.data ?? [];
-          if (buildings.isEmpty) {
-            return const Center(child: Text('建物がありません'));
-          }
-          return ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: buildings.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final b = buildings[index];
-              return _buildBuildingCard(b);
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildBuildingCard(Building building) {
-    final emoji = _buildingEmoji(building.type);
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: 120,
-      child: Card(
-        elevation: 1,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 36)),
-              const SizedBox(height: 8),
+              const Icon(Icons.notifications_active,
+                  color: Colors.white, size: 16),
+              const SizedBox(width: 6),
               Text(
-                building.name,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Lv.${building.level}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.primary,
+                '$count reviews',
+                style: const TextStyle(
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -282,22 +244,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
-  }
-
-  String _buildingEmoji(String type) {
-    switch (type) {
-      case 'library':
-        return '📚';
-      case 'cafeteria':
-        return '🍽';
-      case 'gym':
-        return '🏋';
-      case 'art_room':
-        return '🎨';
-      case 'science_lab':
-        return '🔬';
-      default:
-        return '🏠';
-    }
   }
 }

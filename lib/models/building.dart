@@ -6,6 +6,8 @@ class Building {
   final int level;
   final int coinsToNextLevel;
   final String description;
+  final int? gridRow;
+  final int? gridCol;
 
   const Building({
     required this.id,
@@ -15,7 +17,15 @@ class Building {
     this.level = 1,
     this.coinsToNextLevel = 100,
     this.description = '',
+    this.gridRow,
+    this.gridCol,
   });
+
+  /// Whether this building has been placed on the isometric grid.
+  bool get isPlaced => gridRow != null && gridCol != null;
+
+  /// Path to the building's image asset.
+  String get imagePath => 'assets/buildings/$type.png';
 
   factory Building.fromJson(Map<String, dynamic> json) {
     return Building(
@@ -26,6 +36,8 @@ class Building {
       level: json['level'] as int? ?? 1,
       coinsToNextLevel: json['coinsToNextLevel'] as int? ?? 100,
       description: json['description'] as String? ?? '',
+      gridRow: json['gridRow'] as int?,
+      gridCol: json['gridCol'] as int?,
     );
   }
 
@@ -38,6 +50,8 @@ class Building {
       'level': level,
       'coinsToNextLevel': coinsToNextLevel,
       'description': description,
+      'gridRow': gridRow,
+      'gridCol': gridCol,
     };
   }
 
@@ -49,6 +63,9 @@ class Building {
     int? level,
     int? coinsToNextLevel,
     String? description,
+    int? gridRow,
+    int? gridCol,
+    bool clearGrid = false,
   }) {
     return Building(
       id: id ?? this.id,
@@ -58,6 +75,8 @@ class Building {
       level: level ?? this.level,
       coinsToNextLevel: coinsToNextLevel ?? this.coinsToNextLevel,
       description: description ?? this.description,
+      gridRow: clearGrid ? null : (gridRow ?? this.gridRow),
+      gridCol: clearGrid ? null : (gridCol ?? this.gridCol),
     );
   }
 }
