@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/review_item.dart';
 import '../services/firestore_service.dart';
 
@@ -28,11 +26,13 @@ class ReviewItemRepository {
       _collection,
       where: [
         ['userId', '==', userId],
-        ['nextReviewDate', '<=', Timestamp.fromDate(endOfToday)],
       ],
-      orderBy: 'nextReviewDate',
     );
-    return docs.map((d) => ReviewItem.fromJson(d)).toList();
+    final items = docs.map((d) => ReviewItem.fromJson(d)).toList();
+    // Filter client-side to avoid composite index requirement
+    items.retainWhere((item) => !item.nextReviewDate.isAfter(endOfToday));
+    items.sort((a, b) => a.nextReviewDate.compareTo(b.nextReviewDate));
+    return items;
   }
 
   Stream<List<ReviewItem>> streamReviewItems(String userId) {
@@ -42,8 +42,11 @@ class ReviewItemRepository {
           where: [
             ['userId', '==', userId],
           ],
-          orderBy: 'nextReviewDate',
         )
-        .map((docs) => docs.map((d) => ReviewItem.fromJson(d)).toList());
+        .map((docs) {
+          final list = docs.map((d) => ReviewItem.fromJson(d)).toList();
+          list.sort((a, b) => a.nextReviewDate.compareTo(b.nextReviewDate));
+          return list;
+        });
   }
 }

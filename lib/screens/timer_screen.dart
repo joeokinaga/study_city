@@ -373,13 +373,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   }
 
   Widget _buildSubjectSelector(TimerViewModel timerVM, ThemeData theme) {
-    // Find matching subject from current list by ID (stream may return new objects)
-    final matchedSubject = timerVM.selectedSubject == null
-        ? null
-        : timerVM.subjects
-            .where((s) => s.id == timerVM.selectedSubject!.id)
-            .firstOrNull;
-
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 400),
       child: timerVM.subjects.isEmpty
@@ -406,25 +399,33 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
           : Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<Subject>(
-                    key: ValueKey('${timerVM.subjects.length}_${matchedSubject?.id}'),
-                    initialValue: matchedSubject,
+                  child: InputDecorator(
                     decoration: const InputDecoration(
                       labelText: '科目を選択',
                       prefixIcon: Icon(Icons.book),
                       border: OutlineInputBorder(),
                     ),
-                    items: timerVM.subjects.map((s) {
-                      return DropdownMenuItem(
-                        value: s,
-                        child: Text('${s.icon} ${s.name}'),
-                      );
-                    }).toList(),
-                    onChanged: timerVM.isRunning
-                        ? null
-                        : (subject) {
-                            if (subject != null) timerVM.selectSubject(subject);
-                          },
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<Subject>(
+                        value: timerVM.selectedSubject,
+                        hint: const Text('選択してください'),
+                        isExpanded: true,
+                        isDense: true,
+                        items: timerVM.subjects.map((s) {
+                          return DropdownMenuItem(
+                            value: s,
+                            child: Text('${s.icon} ${s.name}'),
+                          );
+                        }).toList(),
+                        onChanged: timerVM.isRunning
+                            ? null
+                            : (subject) {
+                                if (subject != null) {
+                                  timerVM.selectSubject(subject);
+                                }
+                              },
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
