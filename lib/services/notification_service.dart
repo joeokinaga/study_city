@@ -15,7 +15,6 @@ class NotificationService {
 
   Future<void> scheduleReviewReminder(List<ReviewItem> itemsDueToday) async {
     if (itemsDueToday.isEmpty) return;
-    final count = itemsDueToday.length;
     // For web, we use the Notification API via FCM's onMessage
     // Server-side scheduling would send the actual push notification.
     // Here we request permission and register the handler so the app

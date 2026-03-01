@@ -5,8 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../models/review_item.dart';
 import '../models/subject.dart';
-import '../repositories/review_item_repository.dart';
-import '../services/firestore_service.dart';
 import '../viewmodels/review_view_model.dart';
 import '../viewmodels/subject_view_model.dart';
 
@@ -169,8 +167,6 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   Widget _buildReviewCard(ReviewItem item, ThemeData theme) {
-    final daysSinceCreated =
-        DateTime.now().difference(item.createdAt).inDays;
     final intervalLabel =
         item.repetitions == 0 ? '初回の復習' : '${item.interval}日ぶりの復習';
 

@@ -4,12 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/daily_stats.dart';
 import '../models/time_period.dart';
 import '../repositories/study_session_repository.dart';
-import '../repositories/subject_repository.dart';
 import '../services/firestore_service.dart';
 
 class StatsViewModel extends ChangeNotifier {
   final StudySessionRepository _sessionRepository;
-  final SubjectRepository _subjectRepository;
 
   List<DailyStats> dailyStats = [];
   TimePeriod selectedPeriod = TimePeriod.week;
@@ -17,7 +15,7 @@ class StatsViewModel extends ChangeNotifier {
   int totalSeconds = 0;
   double reviewCompletionRate = 0.0;
 
-  StatsViewModel(this._sessionRepository, this._subjectRepository);
+  StatsViewModel(this._sessionRepository);
 
   Future<void> loadStats(String userId, TimePeriod period) async {
     isLoading = true;
@@ -45,6 +43,5 @@ final statsViewModelProvider = ChangeNotifierProvider<StatsViewModel>((ref) {
   final firestore = FirestoreService();
   return StatsViewModel(
     StudySessionRepository(firestore),
-    SubjectRepository(firestore),
   );
 });

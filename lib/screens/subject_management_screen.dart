@@ -35,7 +35,7 @@ class _SubjectManagementScreenState
   String _formatStudyTime(int seconds) {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
-    if (h > 0) return '$h時間${m}分';
+    if (h > 0) return '$h時間$m分';
     return '$m分';
   }
 
