@@ -35,8 +35,8 @@ class _SubjectManagementScreenState
   String _formatStudyTime(int seconds) {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
-    if (h > 0) return '$h時間$m分';
-    return '$m分';
+    if (h > 0) return '${h}h ${m}m';
+    return '${m}m';
   }
 
   Color _parseColor(String hex) {
@@ -48,17 +48,17 @@ class _SubjectManagementScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('科目を削除'),
-        content: Text('「${subject.name}」を削除してよろしいですか？\nこの操作は取り消せません。'),
+        title: const Text('Delete Subject'),
+        content: Text('Are you sure you want to delete "${subject.name}"?\nThis action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('削除'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -70,7 +70,7 @@ class _SubjectManagementScreenState
           .deleteSubject(_uid, subject.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('「${subject.name}」を削除しました')),
+          SnackBar(content: Text('"${subject.name}" has been deleted')),
         );
       }
     }
@@ -88,7 +88,7 @@ class _SubjectManagementScreenState
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('科目を追加'),
+              title: const Text('Add Subject'),
               content: SingleChildScrollView(
                 child: Form(
                   key: formKey,
@@ -100,18 +100,18 @@ class _SubjectManagementScreenState
                       TextFormField(
                         controller: nameController,
                         decoration: const InputDecoration(
-                          labelText: '科目名',
-                          hintText: '例: 数学',
+                          labelText: 'Subject name',
+                          hintText: 'e.g. Math',
                           border: OutlineInputBorder(),
                         ),
                         autofocus: true,
                         validator: (v) =>
-                            v == null || v.isEmpty ? '科目名を入力してください' : null,
+                            v == null || v.isEmpty ? 'Please enter a subject name' : null,
                       ),
                       const SizedBox(height: 20),
 
                       // Icon picker
-                      const Text('アイコン',
+                      const Text('Icon',
                           style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Wrap(
@@ -149,7 +149,7 @@ class _SubjectManagementScreenState
                       const SizedBox(height: 20),
 
                       // Color picker
-                      const Text('カラー',
+                      const Text('Color',
                           style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Wrap(
@@ -188,7 +188,7 @@ class _SubjectManagementScreenState
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('キャンセル'),
+                  child: const Text('Cancel'),
                 ),
                 FilledButton(
                   onPressed: () async {
@@ -203,7 +203,7 @@ class _SubjectManagementScreenState
                       Navigator.of(dialogContext).pop();
                     }
                   },
-                  child: const Text('追加'),
+                  child: const Text('Add'),
                 ),
               ],
             );
@@ -224,7 +224,7 @@ class _SubjectManagementScreenState
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/timer'),
         ),
-        title: const Text('科目管理'),
+        title: const Text('Manage Subjects'),
       ),
       body: StreamBuilder<List<Subject>>(
         stream: subjectVM.streamSubjects(_uid),
@@ -243,7 +243,7 @@ class _SubjectManagementScreenState
                       size: 64, color: theme.colorScheme.outline),
                   const SizedBox(height: 16),
                   Text(
-                    '＋ボタンから科目を追加しましょう',
+                    'Tap + to add a subject',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(color: theme.colorScheme.outline),
                   ),
@@ -264,7 +264,7 @@ class _SubjectManagementScreenState
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,
-        tooltip: '科目を追加',
+        tooltip: 'Add Subject',
         child: const Icon(Icons.add),
       ),
     );
@@ -291,12 +291,12 @@ class _SubjectManagementScreenState
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          '学習時間: ${_formatStudyTime(subject.totalStudyTime)}',
+          'Study time: ${_formatStudyTime(subject.totalStudyTime)}',
           style: theme.textTheme.bodySmall,
         ),
         trailing: IconButton(
           icon: Icon(Icons.delete_outline, color: Colors.red[400]),
-          tooltip: '削除',
+          tooltip: 'Delete',
           onPressed: () => _confirmDelete(subject),
         ),
       ),
