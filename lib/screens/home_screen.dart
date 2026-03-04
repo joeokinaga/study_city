@@ -82,6 +82,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: _buildReviewBadge(reviewVM.todayItems.length, theme),
             ),
 
+          // Stock badge (top-right, below review badge).
+          if (ref.watch(cityViewModelProvider).stockedBuildings.isNotEmpty)
+            Positioned(
+              top: MediaQuery.of(context).padding.top +
+                  (reviewVM.todayItems.isNotEmpty ? 96 : 56),
+              right: 12,
+              child: _buildStockBadge(
+                ref.watch(cityViewModelProvider).stockedBuildings.length,
+                theme,
+              ),
+            ),
+
           // Start study FAB (bottom-center).
           Positioned(
             bottom: 16,
@@ -135,8 +147,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             case 2:
               context.go('/review');
             case 3:
-              context.go('/buildings');
-            case 4:
               context.go('/stats');
           }
         },
@@ -144,8 +154,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.timer), label: 'Study'),
           NavigationDestination(icon: Icon(Icons.checklist), label: 'Review'),
-          NavigationDestination(
-              icon: Icon(Icons.location_city), label: 'City'),
           NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Stats'),
         ],
       ),
@@ -210,6 +218,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStockBadge(int count, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade800,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.inventory_2, color: Colors.white, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            '$count in stock',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
         ],
       ),

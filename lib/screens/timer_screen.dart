@@ -78,10 +78,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     _timerSub?.cancel();
     WakelockPlus.disable();
 
-    final reward = await timerVM.stopTimer(_uid);
+    // Capture minutes before resetting, then reset UI immediately.
     final minutes = _displayElapsed.inMinutes;
-
     setState(() => _displayElapsed = Duration.zero);
+
+    final reward = await timerVM.stopTimer(_uid);
 
     if (!mounted) return;
     _showCompletionDialog(minutes, reward, timerVM.selectedSubject);
@@ -138,6 +139,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
   Future<void> _showAddReviewDialog(Subject? subject) async {
     final titleController = TextEditingController();
+    final detailController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     await showDialog(
@@ -146,16 +148,31 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         title: const Text('Add Review Item'),
         content: Form(
           key: formKey,
-          child: TextFormField(
-            controller: titleController,
-            decoration: const InputDecoration(
-              labelText: 'Review title',
-              hintText: 'e.g. Basics of calculus',
-              border: OutlineInputBorder(),
-            ),
-            autofocus: true,
-            validator: (v) =>
-                v == null || v.isEmpty ? 'Please enter a title' : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Review title',
+                  hintText: 'e.g. Basics of calculus',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Please enter a title' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: detailController,
+                decoration: const InputDecoration(
+                  labelText: 'Detail (optional)',
+                  hintText: 'e.g. Chapter 3, p.45-52',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
           ),
         ),
         actions: [
@@ -171,6 +188,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                 id: '${_uid}_${now.millisecondsSinceEpoch}',
                 userId: _uid,
                 title: titleController.text.trim(),
+                detail: detailController.text.trim(),
                 subjectId: subject?.id ?? '',
                 nextReviewDate: now.add(const Duration(days: 1)),
                 createdAt: now,
@@ -334,19 +352,30 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     final timerVM = ref.watch(timerViewModelProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: !timerVM.isRunning,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && timerVM.isRunning) {
+          // Browser back pressed while timer running → stop and give rewards.
+          _stopTimer();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home'),
-        ),
+        leading: timerVM.isRunning
+            ? const SizedBox.shrink()
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go('/home'),
+              ),
         title: const Text('Study Timer'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Manage Subjects',
-            onPressed: () => context.go('/subjects'),
-          ),
+          if (!timerVM.isRunning)
+            IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Manage Subjects',
+              onPressed: () => context.go('/subjects'),
+            ),
         ],
       ),
       body: Center(
@@ -369,6 +398,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

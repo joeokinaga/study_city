@@ -182,6 +182,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
+            if (item.detail.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                item.detail,
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
             const SizedBox(height: 4),
             Text(
               intervalLabel,
@@ -233,6 +241,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   Future<void> _showAddDialog() async {
     final titleController = TextEditingController();
+    final detailController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     Subject? selectedSubject;
 
@@ -256,6 +265,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   autofocus: true,
                   validator: (v) =>
                       v == null || v.isEmpty ? 'Please enter a title' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: detailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Detail (optional)',
+                    hintText: 'e.g. Chapter 3, p.45-52',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
                 ),
                 const SizedBox(height: 16),
                 StreamBuilder<List<Subject>>(
@@ -296,6 +315,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   id: '${_uid}_${now.millisecondsSinceEpoch}',
                   userId: _uid,
                   title: titleController.text.trim(),
+                  detail: detailController.text.trim(),
                   subjectId: selectedSubject?.id ?? '',
                   nextReviewDate: now.add(const Duration(days: 1)),
                   createdAt: now,

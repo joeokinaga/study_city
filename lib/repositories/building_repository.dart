@@ -37,6 +37,17 @@ class BuildingRepository {
     });
   }
 
+  /// Remove a building from the grid (set position to null).
+  ///
+  /// The building remains in Firestore but is no longer placed on the city
+  /// grid — it goes into the player's stock / inventory.
+  Future<void> unplaceBuilding(String buildingId) async {
+    await _firestore.updateDocument(_collection, buildingId, {
+      'gridRow': null,
+      'gridCol': null,
+    });
+  }
+
   /// Delete a building document from Firestore.
   Future<void> deleteBuilding(String buildingId) async {
     await _firestore.deleteDocument(_collection, buildingId);

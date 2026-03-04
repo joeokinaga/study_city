@@ -67,8 +67,13 @@ class TimerViewModel extends ChangeNotifier {
 
   Future<Reward> stopTimer(String userId) async {
     final duration = _timerService.stop();
+
+    // Calculate reward immediately (sync) — no Firestore needed.
+    final reward = _rewardService.calculateStudyReward(duration);
+    lastReward = reward;
     notifyListeners();
 
+    // Fire all Firestore writes in parallel for speed.
     final now = DateTime.now();
     final session = StudySession(
       id: '${userId}_${now.millisecondsSinceEpoch}',
@@ -81,21 +86,17 @@ class TimerViewModel extends ChangeNotifier {
       date: DateFormat('yyyy-MM-dd').format(now),
     );
 
-    await _sessionRepository.saveSession(session);
+    await Future.wait([
+      _sessionRepository.saveSession(session),
+      if (selectedSubject != null)
+        _subjectRepository.addStudyTime(
+          userId,
+          selectedSubject!.id,
+          duration.inSeconds,
+        ),
+      _userRepository.addExpAndCoins(userId, reward.exp, reward.coins),
+    ]);
 
-    if (selectedSubject != null) {
-      await _subjectRepository.addStudyTime(
-        userId,
-        selectedSubject!.id,
-        duration.inSeconds,
-      );
-    }
-
-    final reward = _rewardService.calculateStudyReward(duration);
-    await _userRepository.addExpAndCoins(userId, reward.exp, reward.coins);
-
-    lastReward = reward;
-    notifyListeners();
     return reward;
   }
 

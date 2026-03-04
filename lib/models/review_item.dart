@@ -4,6 +4,7 @@ class ReviewItem {
   final String id;
   final String userId;
   final String title;
+  final String detail;
   final String subjectId;
   final DateTime nextReviewDate;
   final int interval; // days
@@ -16,6 +17,7 @@ class ReviewItem {
     required this.id,
     required this.userId,
     required this.title,
+    this.detail = '',
     required this.subjectId,
     required this.nextReviewDate,
     this.interval = 1,
@@ -30,6 +32,7 @@ class ReviewItem {
       id: json['id'] as String,
       userId: json['userId'] as String,
       title: json['title'] as String,
+      detail: json['detail'] as String? ?? '',
       subjectId: json['subjectId'] as String,
       nextReviewDate: (json['nextReviewDate'] as Timestamp).toDate(),
       interval: json['interval'] as int? ?? 1,
@@ -45,6 +48,7 @@ class ReviewItem {
       'id': id,
       'userId': userId,
       'title': title,
+      'detail': detail,
       'subjectId': subjectId,
       'nextReviewDate': Timestamp.fromDate(nextReviewDate),
       'interval': interval,
@@ -59,6 +63,7 @@ class ReviewItem {
     String? id,
     String? userId,
     String? title,
+    String? detail,
     String? subjectId,
     DateTime? nextReviewDate,
     int? interval,
@@ -71,6 +76,7 @@ class ReviewItem {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       title: title ?? this.title,
+      detail: detail ?? this.detail,
       subjectId: subjectId ?? this.subjectId,
       nextReviewDate: nextReviewDate ?? this.nextReviewDate,
       interval: interval ?? this.interval,
