@@ -52,7 +52,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/home'),
         ),
-        title: const Text('復習'),
+        title: const Text('Review'),
         actions: [
           if (_initialCount > 0)
             Center(
@@ -71,7 +71,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           : _buildBody(reviewVM, theme),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(),
-        tooltip: '復習アイテムを追加',
+        tooltip: 'Add Review Item',
         child: const Icon(Icons.add),
       ),
     );
@@ -93,7 +93,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 size: 64, color: theme.colorScheme.outline),
             const SizedBox(height: 16),
             Text(
-              '今日の復習はありません',
+              'No reviews for today',
               style: theme.textTheme.titleMedium
                   ?.copyWith(color: theme.colorScheme.outline),
             ),
@@ -132,13 +132,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            '今日の復習完了！',
+            'All reviews done!',
             style: theme.textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            '${reviewVM.completedCount}件の復習を完了しました',
+            'You completed ${reviewVM.completedCount} reviews',
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: 24),
@@ -168,7 +168,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   Widget _buildReviewCard(ReviewItem item, ThemeData theme) {
     final intervalLabel =
-        item.repetitions == 0 ? '初回の復習' : '${item.interval}日ぶりの復習';
+        item.repetitions == 0 ? 'First review' : 'Review after ${item.interval} days';
 
     return Card(
       elevation: 1,
@@ -182,6 +182,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
+            if (item.detail.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                item.detail,
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
             const SizedBox(height: 4),
             Text(
               intervalLabel,
@@ -198,7 +206,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       foregroundColor: Colors.red[700],
                       side: BorderSide(color: Colors.red[300]!),
                     ),
-                    child: const Text('😓 難しい'),
+                    child: const Text('Hard'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -209,7 +217,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       foregroundColor: Colors.orange[800],
                       side: BorderSide(color: Colors.orange[300]!),
                     ),
-                    child: const Text('🤔 普通'),
+                    child: const Text('Good'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -220,7 +228,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       foregroundColor: Colors.green[700],
                       side: BorderSide(color: Colors.green[300]!),
                     ),
-                    child: const Text('😄 簡単'),
+                    child: const Text('Easy'),
                   ),
                 ),
               ],
@@ -233,6 +241,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   Future<void> _showAddDialog() async {
     final titleController = TextEditingController();
+    final detailController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     Subject? selectedSubject;
 
@@ -240,7 +249,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('復習アイテムを追加'),
+          title: const Text('Add Review Item'),
           content: Form(
             key: formKey,
             child: Column(
@@ -249,13 +258,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 TextFormField(
                   controller: titleController,
                   decoration: const InputDecoration(
-                    labelText: 'タイトル',
-                    hintText: '例: 二次方程式の解の公式',
+                    labelText: 'Title',
+                    hintText: 'e.g. Quadratic formula',
                     border: OutlineInputBorder(),
                   ),
                   autofocus: true,
                   validator: (v) =>
-                      v == null || v.isEmpty ? 'タイトルを入力してください' : null,
+                      v == null || v.isEmpty ? 'Please enter a title' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: detailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Detail (optional)',
+                    hintText: 'e.g. Chapter 3, p.45-52',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
                 ),
                 const SizedBox(height: 16),
                 StreamBuilder<List<Subject>>(
@@ -266,7 +285,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     final subjects = snapshot.data ?? [];
                     return DropdownButtonFormField<Subject>(
                       decoration: const InputDecoration(
-                        labelText: '科目',
+                        labelText: 'Subject',
                         border: OutlineInputBorder(),
                       ),
                       items: subjects.map((s) {
@@ -276,7 +295,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         );
                       }).toList(),
                       onChanged: (v) => selectedSubject = v,
-                      validator: (v) => v == null ? '科目を選択してください' : null,
+                      validator: (v) => v == null ? 'Please select a subject' : null,
                     );
                   },
                 ),
@@ -286,7 +305,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('キャンセル'),
+              child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: () async {
@@ -296,6 +315,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   id: '${_uid}_${now.millisecondsSinceEpoch}',
                   userId: _uid,
                   title: titleController.text.trim(),
+                  detail: detailController.text.trim(),
                   subjectId: selectedSubject?.id ?? '',
                   nextReviewDate: now.add(const Duration(days: 1)),
                   createdAt: now,
@@ -304,7 +324,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 setState(() => _initialCount++);
                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
               },
-              child: const Text('追加'),
+              child: const Text('Add'),
             ),
           ],
         );

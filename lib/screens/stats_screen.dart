@@ -51,8 +51,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
   String _formatTotalTime(int seconds) {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
-    if (h > 0) return '$h時間$m分';
-    return '$m分';
+    if (h > 0) return '${h}h ${m}m';
+    return '${m}m';
   }
 
   @override
@@ -66,7 +66,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/home'),
         ),
-        title: const Text('学習統計'),
+        title: const Text('Study Statistics'),
         bottom: TabBar(
           controller: _tabController,
           tabs: _periods.map((p) => Tab(text: p.label)).toList(),
@@ -88,7 +88,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
           Icon(Icons.bar_chart, size: 64, color: theme.colorScheme.outline),
           const SizedBox(height: 16),
           Text(
-            'まだ学習記録がありません',
+            'No study records yet',
             style: theme.textTheme.titleMedium
                 ?.copyWith(color: theme.colorScheme.outline),
           ),
@@ -112,7 +112,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
                 child: _buildSummaryCard(
                   theme,
                   icon: Icons.schedule,
-                  label: '総学習時間',
+                  label: 'Total Study Time',
                   value: _formatTotalTime(statsVM.totalSeconds),
                 ),
               ),
@@ -121,8 +121,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
                 child: _buildSummaryCard(
                   theme,
                   icon: Icons.calendar_today,
-                  label: '学習日数',
-                  value: '$studyDays日',
+                  label: 'Study Days',
+                  value: '$studyDays days',
                 ),
               ),
             ],
@@ -131,7 +131,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
 
           // Bar chart
           Text(
-            '日別学習時間',
+            'Daily Study Time',
             style: theme.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
@@ -144,7 +144,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
 
           // Pie chart
           Text(
-            '科目別学習時間',
+            'Study Time by Subject',
             style: theme.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
@@ -204,7 +204,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final minutes = rod.toY.round();
               return BarTooltipItem(
-                '$minutes分',
+                '${minutes}m',
                 TextStyle(
                   color: theme.colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
@@ -292,12 +292,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
       case TimePeriod.week:
         final date = DateTime.tryParse(dateStr);
         if (date == null) return day;
-        const weekdays = ['月', '火', '水', '木', '金', '土', '日'];
+        const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         return weekdays[(date.weekday - 1) % 7];
       case TimePeriod.month:
-        return '$day日';
+        return day;
       case TimePeriod.year:
-        return '$month月';
+        return month;
       case TimePeriod.allTime:
         return '$month/$day';
     }
@@ -313,7 +313,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
         if (subjects.isEmpty) {
           return Center(
             child: Text(
-              'データなし',
+              'No data',
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.colorScheme.outline),
             ),
@@ -381,7 +381,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${s.icon} ${s.name} ($minutes分)',
+                        '${s.icon} ${s.name} (${minutes}m)',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],

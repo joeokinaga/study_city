@@ -27,23 +27,6 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
     });
   }
 
-  String _buildingEmoji(String type) {
-    switch (type) {
-      case 'library':
-        return '📚';
-      case 'cafeteria':
-        return '🍽';
-      case 'gym':
-        return '🏋';
-      case 'art_room':
-        return '🎨';
-      case 'science_lab':
-        return '🔬';
-      default:
-        return '🏠';
-    }
-  }
-
   Widget _buildStars(int level) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -61,19 +44,19 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('アップグレード確認'),
+        title: const Text('Confirm Upgrade'),
         content: Text(
-          '${building.name}をLv.${building.level} → Lv.${building.level + 1}にアップグレードしますか？\n'
-          '\n${building.coinsToNextLevel}コインを消費します。',
+          'Upgrade ${building.name} from Lv.${building.level} to Lv.${building.level + 1}?\n'
+          '\nThis will cost ${building.coinsToNextLevel} coins.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('アップグレード'),
+            child: const Text('Upgrade'),
           ),
         ],
       ),
@@ -91,11 +74,11 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
       // Reload user coins
       ref.read(userViewModelProvider).loadUser(_uid);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('🎉 ${building.name}がレベルアップ！')),
+        SnackBar(content: Text('${building.name} leveled up!')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('コインが不足しています')),
+        const SnackBar(content: Text('Not enough coins')),
       );
     }
   }
@@ -112,7 +95,7 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/home'),
         ),
-        title: const Text('街づくり'),
+        title: const Text('City Builder'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -141,7 +124,7 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
           }
           final buildings = snapshot.data ?? [];
           if (buildings.isEmpty) {
-            return const Center(child: Text('建物がありません'));
+            return const Center(child: Text('No buildings yet'));
           }
           return GridView.builder(
             padding: const EdgeInsets.all(16),
@@ -180,13 +163,20 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Emoji + MAX badge
+            // Building image + MAX badge
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Text(
-                  _buildingEmoji(building.type),
-                  style: const TextStyle(fontSize: 48),
+                Image.asset(
+                  building.imagePath,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.home,
+                    size: 48,
+                    color: theme.colorScheme.outline,
+                  ),
                 ),
                 if (isMax)
                   Positioned(
@@ -200,7 +190,7 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
-                        '✨ MAX',
+                        'MAX',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -236,7 +226,7 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
             // Upgrade button
             if (isMax)
               Text(
-                '最大レベル',
+                'Max Level',
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.outline),
               )
@@ -253,10 +243,10 @@ class _BuildingScreenState extends ConsumerState<BuildingScreen> {
                   ),
                   child: canAfford
                       ? Text(
-                          'Lv.${building.level + 1}へ\n${building.coinsToNextLevel}コイン',
+                          'Lv.${building.level + 1}\n${building.coinsToNextLevel} coins',
                           textAlign: TextAlign.center,
                         )
-                      : const Text('コイン不足'),
+                      : const Text('Not enough coins'),
                 ),
               ),
           ],

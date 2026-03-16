@@ -8,7 +8,6 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/timer_screen.dart';
 import 'screens/review_screen.dart';
-import 'screens/building_screen.dart';
 import 'screens/stats_screen.dart';
 import 'screens/subject_management_screen.dart';
 
@@ -57,10 +56,6 @@ final router = GoRouter(
     GoRoute(
       path: '/review',
       builder: (context, state) => const ReviewScreen(),
-    ),
-    GoRoute(
-      path: '/buildings',
-      builder: (context, state) => const BuildingScreen(),
     ),
     GoRoute(
       path: '/stats',

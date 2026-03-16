@@ -62,7 +62,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     final timerVM = ref.read(timerViewModelProvider);
     if (timerVM.selectedSubject == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('科目を選択してください')),
+        const SnackBar(content: Text('Please select a subject')),
       );
       return;
     }
@@ -78,10 +78,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     _timerSub?.cancel();
     WakelockPlus.disable();
 
-    final reward = await timerVM.stopTimer(_uid);
+    // Capture minutes before resetting, then reset UI immediately.
     final minutes = _displayElapsed.inMinutes;
-
     setState(() => _displayElapsed = Duration.zero);
+
+    final reward = await timerVM.stopTimer(_uid);
 
     if (!mounted) return;
     _showCompletionDialog(minutes, reward, timerVM.selectedSubject);
@@ -96,12 +97,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('学習完了!'),
+        title: const Text('Study Complete!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$minutes分 勉強しました'),
+            Text('You studied for $minutes minutes'),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -115,17 +116,17 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text('この内容を復習リストに追加しますか？'),
+            const Text('Add this to your review list?'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('スキップ'),
+            child: const Text('Skip'),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('追加する'),
+            child: const Text('Add'),
           ),
         ],
       ),
@@ -138,30 +139,46 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
   Future<void> _showAddReviewDialog(Subject? subject) async {
     final titleController = TextEditingController();
+    final detailController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('復習アイテムを追加'),
+        title: const Text('Add Review Item'),
         content: Form(
           key: formKey,
-          child: TextFormField(
-            controller: titleController,
-            decoration: const InputDecoration(
-              labelText: '復習内容のタイトル',
-              hintText: '例: 微分積分の基礎',
-              border: OutlineInputBorder(),
-            ),
-            autofocus: true,
-            validator: (v) =>
-                v == null || v.isEmpty ? 'タイトルを入力してください' : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Review title',
+                  hintText: 'e.g. Basics of calculus',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Please enter a title' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: detailController,
+                decoration: const InputDecoration(
+                  labelText: 'Detail (optional)',
+                  hintText: 'e.g. Chapter 3, p.45-52',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () async {
@@ -171,6 +188,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                 id: '${_uid}_${now.millisecondsSinceEpoch}',
                 userId: _uid,
                 title: titleController.text.trim(),
+                detail: detailController.text.trim(),
                 subjectId: subject?.id ?? '',
                 nextReviewDate: now.add(const Duration(days: 1)),
                 createdAt: now,
@@ -179,7 +197,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
               await repo.saveReviewItem(item);
               if (context.mounted) Navigator.of(context).pop();
             },
-            child: const Text('追加'),
+            child: const Text('Add'),
           ),
         ],
       ),
@@ -199,7 +217,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('科目を追加'),
+              title: const Text('Add Subject'),
               content: SingleChildScrollView(
                 child: Form(
                   key: formKey,
@@ -210,16 +228,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                       TextFormField(
                         controller: nameController,
                         decoration: const InputDecoration(
-                          labelText: '科目名',
-                          hintText: '例: 数学',
+                          labelText: 'Subject name',
+                          hintText: 'e.g. Math',
                           border: OutlineInputBorder(),
                         ),
                         autofocus: true,
                         validator: (v) =>
-                            v == null || v.isEmpty ? '科目名を入力してください' : null,
+                            v == null || v.isEmpty ? 'Please enter a subject name' : null,
                       ),
                       const SizedBox(height: 20),
-                      const Text('アイコン',
+                      const Text('Icon',
                           style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Wrap(
@@ -255,7 +273,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                         }).toList(),
                       ),
                       const SizedBox(height: 20),
-                      const Text('カラー',
+                      const Text('Color',
                           style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Wrap(
@@ -294,7 +312,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('キャンセル'),
+                  child: const Text('Cancel'),
                 ),
                 FilledButton(
                   onPressed: () async {
@@ -314,7 +332,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                       Navigator.of(dialogContext).pop();
                     }
                   },
-                  child: const Text('追加'),
+                  child: const Text('Add'),
                 ),
               ],
             );
@@ -334,19 +352,30 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     final timerVM = ref.watch(timerViewModelProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: !timerVM.isRunning,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && timerVM.isRunning) {
+          // Browser back pressed while timer running → stop and give rewards.
+          _stopTimer();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home'),
-        ),
-        title: const Text('学習タイマー'),
+        leading: timerVM.isRunning
+            ? const SizedBox.shrink()
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go('/home'),
+              ),
+        title: const Text('Study Timer'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: '科目管理',
-            onPressed: () => context.go('/subjects'),
-          ),
+          if (!timerVM.isRunning)
+            IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Manage Subjects',
+              onPressed: () => context.go('/subjects'),
+            ),
         ],
       ),
       body: Center(
@@ -369,6 +398,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -383,7 +413,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                     size: 48, color: theme.colorScheme.outline),
                 const SizedBox(height: 12),
                 Text(
-                  'まず科目を追加しましょう',
+                  'Add a subject to get started',
                   style: theme.textTheme.titleMedium
                       ?.copyWith(color: theme.colorScheme.outline),
                 ),
@@ -391,7 +421,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                 FilledButton.icon(
                   onPressed: _showAddSubjectDialog,
                   icon: const Icon(Icons.add),
-                  label: const Text('科目を追加'),
+                  label: const Text('Add Subject'),
                 ),
               ],
             )
@@ -401,14 +431,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                 Expanded(
                   child: InputDecorator(
                     decoration: const InputDecoration(
-                      labelText: '科目を選択',
+                      labelText: 'Select Subject',
                       prefixIcon: Icon(Icons.book),
                       border: OutlineInputBorder(),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<Subject>(
                         value: timerVM.selectedSubject,
-                        hint: const Text('選択してください'),
+                        hint: const Text('Choose a subject'),
                         isExpanded: true,
                         isDense: true,
                         items: timerVM.subjects.map((s) {
@@ -432,7 +462,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                 IconButton.filled(
                   onPressed: timerVM.isRunning ? null : _showAddSubjectDialog,
                   icon: const Icon(Icons.add),
-                  tooltip: '科目を追加',
+                  tooltip: 'Add Subject',
                 ),
               ],
             ),
@@ -477,7 +507,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         child: FilledButton.icon(
           onPressed: _stopTimer,
           icon: const Icon(Icons.stop),
-          label: const Text('停止', style: TextStyle(fontSize: 18)),
+          label: const Text('Stop', style: TextStyle(fontSize: 18)),
           style: FilledButton.styleFrom(
             backgroundColor: Colors.red,
             foregroundColor: Colors.white,
@@ -491,7 +521,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
       child: FilledButton.icon(
         onPressed: _startTimer,
         icon: const Icon(Icons.play_arrow),
-        label: const Text('開始', style: TextStyle(fontSize: 18)),
+        label: const Text('Start', style: TextStyle(fontSize: 18)),
         style: FilledButton.styleFrom(
           backgroundColor: Colors.green,
           foregroundColor: Colors.white,

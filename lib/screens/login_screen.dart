@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/user.dart' as app;
-import '../repositories/building_repository.dart';
 import '../repositories/user_repository.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -29,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen>
   final _authService = AuthService();
   final _firestore = FirestoreService();
   late final UserRepository _userRepository;
-  late final BuildingRepository _buildingRepository;
 
   bool _isLoading = false;
 
@@ -38,7 +36,6 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _userRepository = UserRepository(_firestore);
-    _buildingRepository = BuildingRepository(_firestore);
   }
 
   @override
@@ -53,20 +50,20 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) return 'メールアドレスを入力してください';
+    if (value == null || value.isEmpty) return 'Please enter your email';
     final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!emailRegex.hasMatch(value)) return 'メールアドレスの形式が正しくありません';
+    if (!emailRegex.hasMatch(value)) return 'Invalid email format';
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) return 'パスワードを入力してください';
-    if (value.length < 6) return 'パスワードは6文字以上で入力してください';
+    if (value == null || value.isEmpty) return 'Please enter your password';
+    if (value.length < 6) return 'Password must be at least 6 characters';
     return null;
   }
 
   String? _validateName(String? value) {
-    if (value == null || value.isEmpty) return '名前を入力してください';
+    if (value == null || value.isEmpty) return 'Please enter your name';
     return null;
   }
 
@@ -107,11 +104,11 @@ class _LoginScreenState extends State<LoginScreen>
         uid: uid,
         name: _registerNameController.text.trim(),
         email: _registerEmailController.text.trim(),
+        coins: 200, // Starting bonus to buy first buildings
         createdAt: DateTime.now(),
       );
 
       await _userRepository.createUser(newUser);
-      await _buildingRepository.initializeBuildings(uid);
 
       if (mounted) context.go('/home');
     } catch (e) {
@@ -127,13 +124,13 @@ class _LoginScreenState extends State<LoginScreen>
 
   String _mapAuthError(Object e) {
     final message = e.toString();
-    if (message.contains('user-not-found')) return 'ユーザーが見つかりません';
-    if (message.contains('wrong-password')) return 'パスワードが間違っています';
-    if (message.contains('email-already-in-use')) return 'このメールアドレスは既に登録されています';
-    if (message.contains('invalid-email')) return 'メールアドレスの形式が正しくありません';
-    if (message.contains('weak-password')) return 'パスワードが弱すぎます';
-    if (message.contains('invalid-credential')) return 'メールアドレスまたはパスワードが間違っています';
-    return 'エラーが発生しました: $message';
+    if (message.contains('user-not-found')) return 'User not found';
+    if (message.contains('wrong-password')) return 'Incorrect password';
+    if (message.contains('email-already-in-use')) return 'This email is already registered';
+    if (message.contains('invalid-email')) return 'Invalid email format';
+    if (message.contains('weak-password')) return 'Password is too weak';
+    if (message.contains('invalid-credential')) return 'Invalid email or password';
+    return 'An error occurred: $message';
   }
 
   @override
@@ -166,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '学んで街を育てよう',
+                    'Study and build your city',
                     style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -177,8 +174,8 @@ class _LoginScreenState extends State<LoginScreen>
                   TabBar(
                     controller: _tabController,
                     tabs: const [
-                      Tab(text: 'ログイン'),
-                      Tab(text: '新規登録'),
+                      Tab(text: 'Login'),
+                      Tab(text: 'Sign Up'),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -209,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen>
           TextFormField(
             controller: _loginEmailController,
             decoration: const InputDecoration(
-              labelText: 'メールアドレス',
+              labelText: 'Email',
               prefixIcon: Icon(Icons.email_outlined),
               border: OutlineInputBorder(),
             ),
@@ -220,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen>
           TextFormField(
             controller: _loginPasswordController,
             decoration: const InputDecoration(
-              labelText: 'パスワード',
+              labelText: 'Password',
               prefixIcon: Icon(Icons.lock_outlined),
               border: OutlineInputBorder(),
             ),
@@ -242,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen>
                         color: Colors.white,
                       ),
                     )
-                  : const Text('ログイン'),
+                  : const Text('Login'),
             ),
           ),
         ],
@@ -258,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen>
           TextFormField(
             controller: _registerNameController,
             decoration: const InputDecoration(
-              labelText: '名前',
+              labelText: 'Name',
               prefixIcon: Icon(Icons.person_outlined),
               border: OutlineInputBorder(),
             ),
@@ -268,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen>
           TextFormField(
             controller: _registerEmailController,
             decoration: const InputDecoration(
-              labelText: 'メールアドレス',
+              labelText: 'Email',
               prefixIcon: Icon(Icons.email_outlined),
               border: OutlineInputBorder(),
             ),
@@ -279,7 +276,7 @@ class _LoginScreenState extends State<LoginScreen>
           TextFormField(
             controller: _registerPasswordController,
             decoration: const InputDecoration(
-              labelText: 'パスワード',
+              labelText: 'Password',
               prefixIcon: Icon(Icons.lock_outlined),
               border: OutlineInputBorder(),
             ),
@@ -301,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen>
                         color: Colors.white,
                       ),
                     )
-                  : const Text('新規登録'),
+                  : const Text('Sign Up'),
             ),
           ),
         ],
