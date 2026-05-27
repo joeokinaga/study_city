@@ -9,6 +9,7 @@ import 'models/user.dart' as app;
 import 'repositories/user_repository.dart';
 import 'router.dart';
 import 'services/firestore_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +17,10 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  if (kDevMode) {
+  final notificationService = NotificationService();
+  await notificationService.requestPermission();
+
+  if (true) {
     await _devAutoLogin();
   }
 
@@ -68,6 +72,7 @@ class StudyCityApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Study City',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: Colors.blue,
         useMaterial3: true,
