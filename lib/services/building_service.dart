@@ -11,12 +11,17 @@ class BuildingService {
     return userCoins >= building.coinsToNextLevel;
   }
 
-  /// Upgrade a building: level + 1, next cost = newLevel * 100 + 200.
+  /// Upgrade a building: level + 1.
+  /// Next upgrade cost = purchasePrice × newLevel.
+  /// Falls back to newLevel × 100 + 200 for legacy buildings with no price.
   Building upgrade(Building building) {
     final newLevel = building.level + 1;
+    final nextCost = building.purchasePrice > 0
+        ? building.purchasePrice * newLevel
+        : newLevel * 100 + 200;
     return building.copyWith(
       level: newLevel,
-      coinsToNextLevel: newLevel * 100 + 200,
+      coinsToNextLevel: nextCost,
     );
   }
 
@@ -39,7 +44,8 @@ class BuildingService {
       name: definition.name,
       type: definition.type,
       level: 1,
-      coinsToNextLevel: 2 * 100 + 200, // cost to reach level 2 = 400
+      purchasePrice: definition.purchasePrice,
+      coinsToNextLevel: definition.purchasePrice, // purchasePrice × 1 (cost to reach level 2)
       description: definition.description,
       gridRow: gridRow,
       gridCol: gridCol,
