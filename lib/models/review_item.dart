@@ -7,9 +7,9 @@ class ReviewItem {
   final String detail;
   final String subjectId;
   final DateTime nextReviewDate;
-  final int interval; // days
+  final int interval; 
   final double easeFactor;
-  final int difficulty; // 0-5
+  final int difficulty; 
   final int repetitions;
   final DateTime createdAt;
 

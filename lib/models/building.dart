@@ -8,6 +8,8 @@ class Building {
   final String description;
   final int? gridRow;
   final int? gridCol;
+  /// Original purchase price from the catalog. Used to compute upgrade costs.
+  final int purchasePrice;
 
   const Building({
     required this.id,
@@ -19,12 +21,10 @@ class Building {
     this.description = '',
     this.gridRow,
     this.gridCol,
+    this.purchasePrice = 0,
   });
 
-  /// Whether this building has been placed on the isometric grid.
   bool get isPlaced => gridRow != null && gridCol != null;
-
-  /// Path to the building's image asset.
   String get imagePath => 'assets/buildings/$type.png';
 
   factory Building.fromJson(Map<String, dynamic> json) {
@@ -38,6 +38,7 @@ class Building {
       description: json['description'] as String? ?? '',
       gridRow: json['gridRow'] as int?,
       gridCol: json['gridCol'] as int?,
+      purchasePrice: json['purchasePrice'] as int? ?? 0,
     );
   }
 
@@ -52,6 +53,7 @@ class Building {
       'description': description,
       'gridRow': gridRow,
       'gridCol': gridCol,
+      'purchasePrice': purchasePrice,
     };
   }
 
@@ -65,6 +67,7 @@ class Building {
     String? description,
     int? gridRow,
     int? gridCol,
+    int? purchasePrice,
     bool clearGrid = false,
   }) {
     return Building(
@@ -77,6 +80,7 @@ class Building {
       description: description ?? this.description,
       gridRow: clearGrid ? null : (gridRow ?? this.gridRow),
       gridCol: clearGrid ? null : (gridCol ?? this.gridCol),
+      purchasePrice: purchasePrice ?? this.purchasePrice,
     );
   }
 }
