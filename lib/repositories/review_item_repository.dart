@@ -35,6 +35,18 @@ class ReviewItemRepository {
     return items;
   }
 
+  Future<List<ReviewItem>> getAllReviewItems(String userId) async {
+    final docs = await _firestore.queryCollection(
+      _collection,
+      where: [
+        ['userId', '==', userId],
+      ],
+    );
+    final items = docs.map((d) => ReviewItem.fromJson(d)).toList();
+    items.sort((a, b) => a.nextReviewDate.compareTo(b.nextReviewDate));
+    return items;
+  }
+
   Stream<List<ReviewItem>> streamReviewItems(String userId) {
     return _firestore
         .streamCollection(
