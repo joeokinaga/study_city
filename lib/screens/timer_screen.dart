@@ -10,8 +10,8 @@ import '../models/review_item.dart';
 import '../models/reward.dart';
 import '../models/subject.dart';
 import '../repositories/review_item_repository.dart';
-import '../repositories/subject_repository.dart';
 import '../services/firestore_service.dart';
+import '../viewmodels/subject_view_model.dart';
 import '../viewmodels/timer_view_model.dart';
 
 class TimerScreen extends ConsumerStatefulWidget {
@@ -317,19 +317,28 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                 FilledButton(
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
-                    final now = DateTime.now();
-                    final subject = Subject(
-                      id: '${_uid}_${now.millisecondsSinceEpoch}',
-                      userId: _uid,
-                      name: nameController.text.trim(),
-                      icon: selectedIcon,
-                      color: selectedColor,
-                      createdAt: now,
-                    );
-                    final repo = SubjectRepository(FirestoreService());
-                    await repo.createSubject(subject);
-                    if (dialogContext.mounted) {
-                      Navigator.of(dialogContext).pop();
+                    final scaffold = ScaffoldMessenger.of(context);
+                    try {
+                      await ref
+                          .read(subjectViewModelProvider)
+                          .createSubject(
+                            _uid,
+                            nameController.text.trim(),
+                            selectedIcon,
+                            selectedColor,
+                          );
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      scaffold
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(const SnackBar(
+                            content: Text('Subject added!')));
+                    } catch (e) {
+                      scaffold
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(SnackBar(
+                            content: Text('Failed to add subject: $e')));
                     }
                   },
                   child: const Text('Add'),
@@ -356,8 +365,15 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
       canPop: !timerVM.isRunning,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && timerVM.isRunning) {
-          // Browser back pressed while timer running → stop and give rewards.
-          _stopTimer();
+          if (_displayElapsed.inSeconds < 60) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Study for at least 1 minute before stopping'),
+              ),
+            );
+          } else {
+            _stopTimer();
+          }
         }
       },
       child: Scaffold(
@@ -501,18 +517,42 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
   Widget _buildTimerButton(TimerViewModel timerVM, ThemeData theme) {
     if (timerVM.isRunning) {
-      return SizedBox(
-        width: 200,
-        height: 56,
-        child: FilledButton.icon(
-          onPressed: _stopTimer,
-          icon: const Icon(Icons.stop),
-          label: const Text('Stop', style: TextStyle(fontSize: 18)),
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
+      final secondsElapsed = _displayElapsed.inSeconds;
+      final canStop = secondsElapsed >= 60;
+      final remaining = 60 - secondsElapsed;
+
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 200,
+            height: 56,
+            child: FilledButton.icon(
+              onPressed: canStop ? _stopTimer : null,
+              icon: const Icon(Icons.stop),
+              label: Text(
+                canStop ? 'Stop' : 'Stop (${remaining}s)',
+                style: const TextStyle(fontSize: 18),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade400,
+                disabledForegroundColor: Colors.white,
+              ),
+            ),
           ),
-        ),
+          if (!canStop) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Minimum 1 minute required',
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
       );
     }
     return SizedBox(

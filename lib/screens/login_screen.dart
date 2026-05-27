@@ -67,6 +67,73 @@ class _LoginScreenState extends State<LoginScreen>
     return null;
   }
 
+  Future<void> _handleForgotPassword() async {
+    final emailController = TextEditingController(
+      text: _loginEmailController.text.trim(),
+    );
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Enter your email address and we will send you a password reset link.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email_outlined),
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final email = emailController.text.trim();
+      if (email.isNotEmpty) {
+        try {
+          await _authService.sendPasswordResetEmail(email);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Password reset email sent. Please check your inbox.',
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(_mapAuthError(e))),
+            );
+          }
+        }
+      }
+    }
+    emailController.dispose();
+  }
+
   Future<void> _handleLogin() async {
     if (!_loginFormKey.currentState!.validate()) return;
 
@@ -180,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
-                    height: 320,
+                    height: 360,
                     child: TabBarView(
                       controller: _tabController,
                       children: [
@@ -240,6 +307,13 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     )
                   : const Text('Login'),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _handleForgotPassword,
+              child: const Text('Forgot password?'),
             ),
           ),
         ],
