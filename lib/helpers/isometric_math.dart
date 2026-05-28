@@ -3,20 +3,24 @@ import 'dart:ui';
 /// Constants for the isometric grid.
 const double tileWidth = 64.0;
 const double tileHeight = 32.0;
-const int gridRows = 8;
-const int gridCols = 8;
+const int gridRows = 15;
+const int gridCols = 15;
 
 /// Extra vertical space above the grid origin so buildings don't clip.
 /// Tall buildings (e.g. Office Tower, heightRatio 2.0) need extra headroom.
-const double gridOffsetY = 200.0;
+const double gridOffsetY = 250.0;
+
+/// Extra padding around the grid for background scenery.
+const double bgPadding = 160.0;
 
 /// Horizontal center offset for the grid canvas.
-double get gridOffsetX => (gridRows + gridCols) * tileWidth / 4;
+double get gridOffsetX => (gridRows + gridCols) * tileWidth / 4 + bgPadding;
 
-/// Total canvas size needed to contain the full isometric grid + buildings.
-double get canvasWidth => (gridRows + gridCols) * tileWidth / 2 + tileWidth;
+/// Total canvas size needed to contain the full isometric grid + buildings + background.
+double get canvasWidth =>
+    (gridRows + gridCols) * tileWidth / 2 + tileWidth + bgPadding * 2;
 double get canvasHeight =>
-    (gridRows + gridCols) * tileHeight / 2 + gridOffsetY + 80;
+    (gridRows + gridCols) * tileHeight / 2 + gridOffsetY + 80 + bgPadding;
 
 /// Convert grid coordinates (row, col) to screen pixel position.
 ///

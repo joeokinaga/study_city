@@ -36,6 +36,11 @@ class SubjectViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateSubject(Subject subject) async {
+    await _subjectRepository.updateSubject(subject);
+    notifyListeners();
+  }
+
   Future<void> deleteSubject(String userId, String subjectId) async {
     await _subjectRepository.deleteSubject(userId, subjectId);
     notifyListeners();

@@ -23,6 +23,12 @@ class UserRepository {
     await _firestore.updateDocument(_collection, user.uid, user.toJson());
   }
 
+  Future<void> updateWeeklyGoal(String uid, int minutes) async {
+    await _firestore.updateDocument(_collection, uid, {
+      'weeklyGoalMinutes': minutes,
+    });
+  }
+
   Future<void> addExpAndCoins(String uid, int exp, int coins) async {
     await _firestore.updateDocument(_collection, uid, {
       'exp': FieldValue.increment(exp),

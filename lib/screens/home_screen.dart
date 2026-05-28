@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../viewmodels/city_view_model.dart';
 import '../viewmodels/review_view_model.dart';
 import '../viewmodels/user_view_model.dart';
@@ -18,16 +19,20 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _authService = AuthService();
+  final _notificationService = NotificationService();
 
   String get _uid => fb.FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_uid.isNotEmpty) {
         ref.read(userViewModelProvider).loadUser(_uid);
-        ref.read(reviewViewModelProvider).loadTodayItems(_uid);
+        await ref.read(reviewViewModelProvider).loadTodayItems(_uid);
+        // Show a browser notification if there are reviews due today.
+        final count = ref.read(reviewViewModelProvider).todayItems.length;
+        _notificationService.showReviewReminder(count);
       }
     });
   }
@@ -49,8 +54,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Background color behind the isometric grid.
           Container(color: const Color(0xFF4A8C30)),
 
-          // Isometric city view (full screen, pannable/zoomable).
-          const IsometricCityWidget(),
+          // Isometric city view — Positioned.fill gives tight constraints so
+          // the widget's LayoutBuilder always reports the true viewport size.
+          const Positioned.fill(child: IsometricCityWidget()),
 
           // User info card (top-left overlay).
           Positioned(
@@ -147,6 +153,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             case 2:
               context.go('/review');
             case 3:
+              context.go('/progress');
+            case 4:
               context.go('/stats');
           }
         },
@@ -154,6 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.timer), label: 'Study'),
           NavigationDestination(icon: Icon(Icons.checklist), label: 'Review'),
+          NavigationDestination(icon: Icon(Icons.trending_up), label: 'Progress'),
           NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Stats'),
         ],
       ),

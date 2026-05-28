@@ -224,7 +224,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Text(
-                  '${value.toInt()}',
+                  '${value.toInt()}m',
                   style: theme.textTheme.bodySmall,
                 );
               },

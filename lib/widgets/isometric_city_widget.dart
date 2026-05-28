@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ import '../viewmodels/city_view_model.dart';
 import 'building_info_sheet.dart';
 import 'building_shop_sheet.dart';
 import 'isometric_grid_painter.dart';
+import 'nature_decoration_layer.dart';
 
 /// Main isometric city widget.
 ///
@@ -32,14 +35,55 @@ class IsometricCityWidget extends ConsumerStatefulWidget {
 class _IsometricCityWidgetState extends ConsumerState<IsometricCityWidget> {
   String get _uid => fb.FirebaseAuth.instance.currentUser?.uid ?? '';
 
+  late final TransformationController _transformController;
+  bool _initialTransformSet = false;
+  bool _cameraCallbackPending = false;
+
   @override
   void initState() {
     super.initState();
+    _transformController = TransformationController();
+    // Only initialise the city VM here; camera is set in LayoutBuilder
+    // after the loading phase resolves and real viewport dimensions are known.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_uid.isNotEmpty) {
         ref.read(cityViewModelProvider).init(_uid);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _transformController.dispose();
+    super.dispose();
+  }
+
+  void _applyInitialTransform(double vw, double vh) {
+    // Minimum scale that keeps the canvas covering the full viewport
+    // so the canvas edge (background boundary) is never visible.
+    final minS = math.max(vw / canvasWidth, vh / canvasHeight);
+
+    // Start slightly more zoomed-in than the minimum for a comfortable view.
+    final scale = math.max(minS, 0.9);
+
+    // Canvas is 1344 × 970; the isometric grid diamond is centred at (640, 490).
+    const gridCenterX = 640.0;
+    const gridCenterY = 490.0;
+
+    // Ideal position: grid centre maps to viewport centre.
+    double tx = vw / 2 - scale * gridCenterX;
+    double ty = vh / 2 - scale * gridCenterY;
+
+    // Clamp so the canvas always covers the viewport — no edges bleed through.
+    // Valid range: [-(canvasSize*scale - viewportSize), 0]
+    tx = tx.clamp(-(canvasWidth * scale - vw), 0.0);
+    ty = ty.clamp(-(canvasHeight * scale - vh), 0.0);
+
+    _transformController.value =
+        Matrix4.translationValues(tx, ty, 0) *
+        Matrix4.diagonal3Values(scale, scale, 1.0);
+
+    _initialTransformSet = true;
   }
 
   // ─── Tap handling ───────────────────────────────────────────────────
@@ -196,42 +240,83 @@ class _IsometricCityWidgetState extends ConsumerState<IsometricCityWidget> {
         return depthA.compareTo(depthB);
       });
 
-    return Stack(
-      children: [
-        // ─── Main isometric view (pannable / zoomable) ──────────────
-        InteractiveViewer(
-          constrained: false,
-          boundaryMargin: const EdgeInsets.all(100),
-          minScale: 0.5,
-          maxScale: 2.5,
-          child: GestureDetector(
-            onTapUp: _onTapUp,
-            child: SizedBox(
-              width: canvasWidth,
-              height: canvasHeight,
-              child: Stack(
-                children: [
-                  // Ground grid layer.
-                  CustomPaint(
-                    size: Size(canvasWidth, canvasHeight),
-                    painter: IsometricGridPainter(
-                      occupiedTiles: occupiedTiles,
-                      selectedTile: cityVM.selectedTile,
+    // ─── Outer container fills any gap beyond the canvas with the same
+    //     forest-green used by IsometricGridPainter, making the canvas
+    //     boundary invisible even on very large or unusual viewports.
+    return Container(
+      color: const Color(0xFF3B7A20),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final vw = constraints.maxWidth;
+          final vh = constraints.maxHeight;
+
+          // Dynamic minScale: the canvas must cover the full viewport so
+          // the canvas boundary (background edge) is never exposed.
+          // At this scale the entire 15×15 buildable grid is also visible.
+          final minScale = (vw > 0 && vh > 0)
+              ? math.max(vw / canvasWidth, vh / canvasHeight)
+              : 0.5;
+
+          // Set the initial camera once we have real viewport dimensions
+          // (i.e. here, after the loading guard above, using LayoutBuilder
+          // constraints rather than findRenderObject which can be 0×0 under
+          // loose Stack constraints).
+          if (!_initialTransformSet && !_cameraCallbackPending &&
+              vw > 0 && vh > 0) {
+            _cameraCallbackPending = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _cameraCallbackPending = false;
+              if (!_initialTransformSet && mounted) {
+                _applyInitialTransform(vw, vh);
+              }
+            });
+          }
+
+          return Stack(
+            children: [
+              // ─── Main isometric view (pannable / zoomable) ──────────
+              InteractiveViewer(
+                transformationController: _transformController,
+                constrained: false,
+                boundaryMargin: EdgeInsets.zero,
+                minScale: minScale,
+                maxScale: 2.5,
+                child: GestureDetector(
+                  onTapUp: _onTapUp,
+                  child: SizedBox(
+                    width: canvasWidth,
+                    height: canvasHeight,
+                    child: Stack(
+                      children: [
+                        // Ground grid layer.
+                        CustomPaint(
+                          size: Size(canvasWidth, canvasHeight),
+                          painter: IsometricGridPainter(
+                            occupiedTiles: occupiedTiles,
+                            selectedTile: cityVM.selectedTile,
+                          ),
+                        ),
+
+                        // Nature decoration layer (trees, rocks, flowers).
+                        const NatureDecorationLayer(),
+
+                        // Building sprites layer.
+                        ...sortedBuildings.map(
+                          (building) =>
+                              _buildBuildingSprite(building, cityVM),
+                        ),
+                      ],
                     ),
                   ),
-
-                  // Building sprites layer.
-                  ...sortedBuildings
-                      .map((building) => _buildBuildingSprite(building, cityVM)),
-                ],
+                ),
               ),
-            ),
-          ),
-        ),
 
-        // ─── Move mode banner (overlays the city) ───────────────────
-        if (cityVM.isMoving) _buildMoveBanner(cityVM),
-      ],
+              // ─── Move mode banner (overlays the city) ─────────────
+              if (cityVM.isMoving) _buildMoveBanner(cityVM),
+            ],
+          );
+        },
+      ),
     );
   }
 

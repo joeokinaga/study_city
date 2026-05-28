@@ -6,6 +6,7 @@ class User {
   final String email;
   final int exp;
   final int coins;
+  final int weeklyGoalMinutes;
   final DateTime createdAt;
 
   const User({
@@ -14,6 +15,7 @@ class User {
     required this.email,
     this.exp = 0,
     this.coins = 0,
+    this.weeklyGoalMinutes = 600,
     required this.createdAt,
   });
 
@@ -24,6 +26,7 @@ class User {
       email: json['email'] as String,
       exp: json['exp'] as int? ?? 0,
       coins: json['coins'] as int? ?? 0,
+      weeklyGoalMinutes: json['weeklyGoalMinutes'] as int? ?? 600,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
     );
   }
@@ -35,6 +38,7 @@ class User {
       'email': email,
       'exp': exp,
       'coins': coins,
+      'weeklyGoalMinutes': weeklyGoalMinutes,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -45,6 +49,7 @@ class User {
     String? email,
     int? exp,
     int? coins,
+    int? weeklyGoalMinutes,
     DateTime? createdAt,
   }) {
     return User(
@@ -53,6 +58,7 @@ class User {
       email: email ?? this.email,
       exp: exp ?? this.exp,
       coins: coins ?? this.coins,
+      weeklyGoalMinutes: weeklyGoalMinutes ?? this.weeklyGoalMinutes,
       createdAt: createdAt ?? this.createdAt,
     );
   }

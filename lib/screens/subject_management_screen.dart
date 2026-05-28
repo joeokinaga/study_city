@@ -76,6 +76,140 @@ class _SubjectManagementScreenState
     }
   }
 
+  Future<void> _showEditDialog(Subject subject) async {
+    final nameController = TextEditingController(text: subject.name);
+    final formKey = GlobalKey<FormState>();
+    String selectedIcon = subject.icon;
+    String selectedColor = subject.color;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Edit Subject'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Subject name',
+                          hintText: 'e.g. Math',
+                          border: OutlineInputBorder(),
+                        ),
+                        autofocus: true,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Please enter a subject name' : null,
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('Icon',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _iconOptions.map((icon) {
+                          final isSelected = icon == selectedIcon;
+                          return GestureDetector(
+                            onTap: () =>
+                                setDialogState(() => selectedIcon = icon),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.grey[300]!,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                color: isSelected
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                    : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(icon,
+                                  style: const TextStyle(fontSize: 22)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('Color',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 12,
+                        children: _colorOptions.map((hex) {
+                          final isSelected = hex == selectedColor;
+                          final color = _parseColor(hex);
+                          return GestureDetector(
+                            onTap: () =>
+                                setDialogState(() => selectedColor = hex),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.black87
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
+                              ),
+                              child: isSelected
+                                  ? const Icon(Icons.check,
+                                      size: 18, color: Colors.white)
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    final updated = subject.copyWith(
+                      name: nameController.text.trim(),
+                      icon: selectedIcon,
+                      color: selectedColor,
+                    );
+                    await ref
+                        .read(subjectViewModelProvider)
+                        .updateSubject(updated);
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _showAddDialog() async {
     final nameController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -294,10 +428,21 @@ class _SubjectManagementScreenState
           'Study time: ${_formatStudyTime(subject.totalStudyTime)}',
           style: theme.textTheme.bodySmall,
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete_outline, color: Colors.red[400]),
-          tooltip: 'Delete',
-          onPressed: () => _confirmDelete(subject),
+        onTap: () => _showEditDialog(subject),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
+              tooltip: 'Edit',
+              onPressed: () => _showEditDialog(subject),
+            ),
+            IconButton(
+              icon: Icon(Icons.delete_outline, color: Colors.red[400]),
+              tooltip: 'Delete',
+              onPressed: () => _confirmDelete(subject),
+            ),
+          ],
         ),
       ),
     );

@@ -1,3 +1,3 @@
-// Placeholder test file.
-// Firebase must be initialized before widget tests can run.
-// Use firebase_core mock or integration tests with the emulator.
+// Widget tests require Firebase initialization.
+// Unit tests for pure logic are in the other test files.
+void main() {}
