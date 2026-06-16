@@ -49,3 +49,10 @@ lib/firebase_options.dart
 .env
 google-services.json
 GoogleService-Info.plist
+
+# Node / npm
+node_modules/
+package-lock.json
+
+# Firebase local cache
+.firebase/
