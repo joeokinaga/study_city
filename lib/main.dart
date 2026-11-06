@@ -20,7 +20,7 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.requestPermission();
 
-  if (true) {
+  if (kDevMode) {
     await _devAutoLogin();
   }
 
