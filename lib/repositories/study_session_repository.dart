@@ -70,7 +70,6 @@ class StudySessionRepository {
         date: session.date,
         totalDuration: (existing?.totalDuration ?? 0) + session.duration,
         sessionCount: (existing?.sessionCount ?? 0) + 1,
-        reviewCount: existing?.reviewCount ?? 0,
       );
     }
 

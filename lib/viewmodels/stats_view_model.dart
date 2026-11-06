@@ -13,7 +13,6 @@ class StatsViewModel extends ChangeNotifier {
   TimePeriod selectedPeriod = TimePeriod.week;
   bool isLoading = false;
   int totalSeconds = 0;
-  double reviewCompletionRate = 0.0;
 
   StatsViewModel(this._sessionRepository);
 
@@ -24,11 +23,6 @@ class StatsViewModel extends ChangeNotifier {
 
     dailyStats = await _sessionRepository.getDailyStats(userId, period);
     totalSeconds = dailyStats.fold(0, (sum, s) => sum + s.totalDuration);
-
-    final totalReviews = dailyStats.fold(0, (sum, s) => sum + s.reviewCount);
-    final totalSessions = dailyStats.fold(0, (sum, s) => sum + s.sessionCount);
-    reviewCompletionRate =
-        totalSessions > 0 ? totalReviews / totalSessions : 0.0;
 
     isLoading = false;
     notifyListeners();
