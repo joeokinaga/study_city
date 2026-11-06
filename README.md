@@ -90,10 +90,15 @@ lib/
     ├── home_screen.dart
     ├── timer_screen.dart
     ├── review_screen.dart
-    ├── building_screen.dart
+    ├── progress_screen.dart
     ├── stats_screen.dart
     └── subject_management_screen.dart
 ```
+
+## Documentation
+
+- [`docs/TECH_STACK.md`](docs/TECH_STACK.md) — Technology choices and tradeoffs
+- [`docs/DESIGN.md`](docs/DESIGN.md) — Architectural decisions and rationale
 
 ## License
 
