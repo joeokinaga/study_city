@@ -2,8 +2,43 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // users: document ID equals the uid, so path parameter doubles as the owner check.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // All other collections store the owner's uid in a userId field.
+    // create checks the incoming document; read/update/delete check the stored document.
+    match /study_sessions/{sessionId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create:       if isOwner(request.resource.data.userId);
+      allow update:       if isOwner(resource.data.userId);
+    }
+
+    match /review_items/{itemId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create:       if isOwner(request.resource.data.userId);
+      allow update:       if isOwner(resource.data.userId);
+    }
+
+    match /subjects/{subjectId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create:       if isOwner(request.resource.data.userId);
+      allow update:       if isOwner(resource.data.userId);
+    }
+
+    match /buildings/{buildingId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create:       if isOwner(request.resource.data.userId);
+      allow update:       if isOwner(resource.data.userId);
     }
   }
 }
