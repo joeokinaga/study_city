@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../models/user.dart' as app;
-import '../repositories/user_repository.dart';
-import '../services/auth_service.dart';
-import '../services/firestore_service.dart';
+import '../viewmodels/login_view_model.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final _loginFormKey = GlobalKey<FormState>();
@@ -25,17 +23,10 @@ class _LoginScreenState extends State<LoginScreen>
   final _registerEmailController = TextEditingController();
   final _registerPasswordController = TextEditingController();
 
-  final _authService = AuthService();
-  final _firestore = FirestoreService();
-  late final UserRepository _userRepository;
-
-  bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _userRepository = UserRepository(_firestore);
   }
 
   @override
@@ -112,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen>
       final email = emailController.text.trim();
       if (email.isNotEmpty) {
         try {
-          await _authService.sendPasswordResetEmail(email);
+          await ref.read(loginViewModelProvider).sendPasswordReset(email);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -136,13 +127,11 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _handleLogin() async {
     if (!_loginFormKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
     try {
-      await _authService.signInWithEmail(
-        _loginEmailController.text.trim(),
-        _loginPasswordController.text,
-      );
+      await ref.read(loginViewModelProvider).signIn(
+            _loginEmailController.text.trim(),
+            _loginPasswordController.text,
+          );
       if (mounted) context.go('/home');
     } catch (e) {
       if (mounted) {
@@ -150,33 +139,17 @@ class _LoginScreenState extends State<LoginScreen>
           SnackBar(content: Text(_mapAuthError(e))),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _handleRegister() async {
     if (!_registerFormKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
     try {
-      final credential = await _authService.signUpWithEmail(
-        _registerEmailController.text.trim(),
-        _registerPasswordController.text,
-        _registerNameController.text.trim(),
-      );
-
-      final uid = credential.user!.uid;
-      final newUser = app.User(
-        uid: uid,
-        name: _registerNameController.text.trim(),
-        email: _registerEmailController.text.trim(),
-        coins: 200, // Starting bonus to buy first buildings
-        createdAt: DateTime.now(),
-      );
-
-      await _userRepository.createUser(newUser);
-
+      await ref.read(loginViewModelProvider).register(
+            _registerNameController.text.trim(),
+            _registerEmailController.text.trim(),
+            _registerPasswordController.text,
+          );
       if (mounted) context.go('/home');
     } catch (e) {
       if (mounted) {
@@ -184,8 +157,6 @@ class _LoginScreenState extends State<LoginScreen>
           SnackBar(content: Text(_mapAuthError(e))),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -202,6 +173,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(loginViewModelProvider).isLoading;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -213,7 +186,6 @@ class _LoginScreenState extends State<LoginScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 48),
-                  // Logo
                   Icon(
                     Icons.location_city,
                     size: 64,
@@ -237,7 +209,6 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                   const SizedBox(height: 40),
-                  // Tabs
                   TabBar(
                     controller: _tabController,
                     tabs: const [
@@ -251,8 +222,8 @@ class _LoginScreenState extends State<LoginScreen>
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildLoginForm(),
-                        _buildRegisterForm(),
+                        _buildLoginForm(isLoading),
+                        _buildRegisterForm(isLoading),
                       ],
                     ),
                   ),
@@ -265,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm(bool isLoading) {
     return Form(
       key: _loginFormKey,
       child: Column(
@@ -296,8 +267,8 @@ class _LoginScreenState extends State<LoginScreen>
             width: double.infinity,
             height: 48,
             child: FilledButton(
-              onPressed: _isLoading ? null : _handleLogin,
-              child: _isLoading
+              onPressed: isLoading ? null : _handleLogin,
+              child: isLoading
                   ? const SizedBox(
                       width: 24,
                       height: 24,
@@ -321,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildRegisterForm() {
+  Widget _buildRegisterForm(bool isLoading) {
     return Form(
       key: _registerFormKey,
       child: Column(
@@ -362,8 +333,8 @@ class _LoginScreenState extends State<LoginScreen>
             width: double.infinity,
             height: 48,
             child: FilledButton(
-              onPressed: _isLoading ? null : _handleRegister,
-              child: _isLoading
+              onPressed: isLoading ? null : _handleRegister,
+              child: isLoading
                   ? const SizedBox(
                       width: 24,
                       height: 24,
