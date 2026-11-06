@@ -11,6 +11,7 @@ class ReviewService {
       item.repetitions,
       item.easeFactor,
       item.interval,
+      DateTime.now(),
     );
 
     return item.copyWith(

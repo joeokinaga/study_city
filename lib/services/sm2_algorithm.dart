@@ -12,6 +12,7 @@ class SM2Algorithm {
     int repetitions,
     double easeFactor,
     int previousInterval,
+    DateTime now,
   ) {
     // Step 1: Update ease factor
     // New EF = Old EF + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
@@ -36,8 +37,7 @@ class SM2Algorithm {
       }
     }
 
-    final nextReviewDate =
-        DateTime.now().add(Duration(days: newInterval));
+    final nextReviewDate = now.add(Duration(days: newInterval));
 
     return ReviewSchedule(
       interval: newInterval,
