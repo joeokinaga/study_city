@@ -26,14 +26,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
   String get _uid => fb.FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  static const _iconOptions = [
-    '📚', '📐', '🔬', '🎨', '🎵', '🌍',
-    '💻', '📝', '🧪', '⚡', '🧮', '📖',
-  ];
-
-  static const _colorOptions = [
-    '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336', '#009688',
-  ];
 
   @override
   void initState() {
@@ -206,8 +198,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   Future<void> _showAddSubjectDialog() async {
     final nameController = TextEditingController();
     final formKey = GlobalKey<FormState>();
-    String selectedIcon = _iconOptions[0];
-    String selectedColor = _colorOptions[0];
+    String selectedIcon = Subject.iconOptions[0];
+    String selectedColor = Subject.colorOptions[0];
 
     await showDialog(
       context: context,
@@ -241,7 +233,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _iconOptions.map((icon) {
+                        children: Subject.iconOptions.map((icon) {
                           final isSelected = icon == selectedIcon;
                           return GestureDetector(
                             onTap: () =>
@@ -276,9 +268,9 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 12,
-                        children: _colorOptions.map((hex) {
+                        children: Subject.colorOptions.map((hex) {
                           final isSelected = hex == selectedColor;
-                          final color = _parseColor(hex);
+                          final color = Subject.parseColor(hex);
                           return GestureDetector(
                             onTap: () =>
                                 setDialogState(() => selectedColor = hex),
@@ -347,11 +339,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         );
       },
     );
-  }
-
-  Color _parseColor(String hex) {
-    final code = hex.replaceFirst('#', '');
-    return Color(int.parse('FF$code', radix: 16));
   }
 
   @override

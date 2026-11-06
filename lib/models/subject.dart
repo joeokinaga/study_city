@@ -1,6 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 class Subject {
+  static const List<String> iconOptions = [
+    '📚', '📐', '🔬', '🎨', '🎵', '🌍',
+    '💻', '📝', '🧪', '⚡', '🧮', '📖',
+  ];
+
+  static const List<String> colorOptions = [
+    '#2196F3',
+    '#4CAF50',
+    '#FF9800',
+    '#9C27B0',
+    '#F44336',
+    '#009688',
+  ];
+
+  static Color parseColor(String hex) {
+    final code = hex.replaceFirst('#', '');
+    return Color(int.parse('FF$code', radix: 16));
+  }
+
   final String id;
   final String userId;
   final String name;
