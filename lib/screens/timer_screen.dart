@@ -9,8 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/review_item.dart';
 import '../models/reward.dart';
 import '../models/subject.dart';
-import '../repositories/review_item_repository.dart';
-import '../services/firestore_service.dart';
+import '../viewmodels/review_view_model.dart';
 import '../viewmodels/subject_view_model.dart';
 import '../viewmodels/timer_view_model.dart';
 
@@ -193,8 +192,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                 nextReviewDate: now.add(const Duration(days: 1)),
                 createdAt: now,
               );
-              final repo = ReviewItemRepository(FirestoreService());
-              await repo.saveReviewItem(item);
+              await ref.read(reviewViewModelProvider).addReviewItem(item);
               if (context.mounted) Navigator.of(context).pop();
             },
             child: const Text('Add'),
